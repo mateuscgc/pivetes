@@ -36,6 +36,7 @@ public class ThePiva extends TwoFrontsRobot {
     ArrayList<Double> velocityList;
     ArrayList<Double> turnRateList;
     int nMean;
+    double upperDistance = 400;
 
     double distancing = 0;
 
@@ -75,16 +76,31 @@ public class ThePiva extends TwoFrontsRobot {
         scannedY = getY() + Math.cos(absoluteBearing)*e.getDistance();
     }
 
-    public void onScannedRobot(ScannedRobotEvent e) {
+    @Override
+	public void onRobotDeath(RobotDeathEvent event) {
+		// TODO Auto-generated method stub
+		// super.onRobotDeath(event);
+        // run();
+        // setTurnRadarRightRadians(40);
+        // execute();
+	}
 
+
+    public void onScannedRobot(ScannedRobotEvent e) {
+        if(e.getDistance() > upperDistance){
+            upperDistance+=50;
+        	setTurnRadarRightRadians(40);
+            execute();
+        }
+        upperDistance = 400;
         storeScanned(e);
 
-        if(tracked != null && !tracked.equals(e.getName())) {
-            if(e.getDistance() / trackedDistance >= 0.5)
-                return;
-            tracked = e.getName();
-        }
-        if(tracked == null) tracked = e.getName();
+        // if(tracked != null && !tracked.equals(e.getName())) {
+        //     if(e.getDistance() / trackedDistance >= 0.5)
+        //         return;
+        //     tracked = e.getName();
+        // }
+        // if(tracked == null) tracked = e.getName();
 
         // setAdjustRadarForGunTurn(true);
 
@@ -183,7 +199,7 @@ public class ThePiva extends TwoFrontsRobot {
     }
 
 
-    /*public void onPaint(Graphics2D g) {
+    public void onPaint(Graphics2D g) {
         // Set the paint color to a red half transparent color
         g.setColor(new Color(0xff, 0x00, 0x00, 0x80));
         // Draw a line from our robot to the scanned robot
@@ -218,7 +234,7 @@ public class ThePiva extends TwoFrontsRobot {
         g.drawLine((int)getX(), (int)getY(), (int)(getX()+vecX), (int)(getY()+vecY));
         g.setColor(new Color(255, 49, 163));
         g.drawLine((int)getX(), (int)getY(), (int)(getX()+dX), (int)(getY()+dY));
-    }*/
+    }
     public void atira(ScannedRobotEvent e) {
 
         double fire = Math.min(400 / e.getDistance(), 3);
