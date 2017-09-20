@@ -35,9 +35,8 @@ public class Pipoca extends TwoFrontsRobot {
     ArrayList<Double> velocityList;
     ArrayList<Double> turnRateList;
     int nMean;
-    double upperDistance = 400;
 
-//    double distancing = 0;
+    //    double distancing = 0;
     double reverseChance = 0.03;
 
 
@@ -89,36 +88,17 @@ public class Pipoca extends TwoFrontsRobot {
         scannedY = getY() + Math.cos(absoluteBearing)*e.getDistance();
     }
 
-<<<<<<< HEAD:src/PIVA/ThePiva.java
-    @Override
-	public void onRobotDeath(RobotDeathEvent event) {
-		// TODO Auto-generated method stub
-		// super.onRobotDeath(event);
-        // run();
-        // setTurnRadarRightRadians(40);
-        // execute();
-	}
-=======
     public void onScannedRobot(ScannedRobotEvent e) {
         out.println("Chance "+reverseChance);
->>>>>>> 37b39453a96acc8bce8d0a7a133363a3acaee297:src/PIVA/Pipoca.java
 
-
-    public void onScannedRobot(ScannedRobotEvent e) {
-        if(e.getDistance() > upperDistance){
-            upperDistance+=50;
-        	setTurnRadarRightRadians(40);
-            execute();
-        }
-        upperDistance = 400;
         storeScanned(e);
 
-        // if(tracked != null && !tracked.equals(e.getName())) {
-        //     if(e.getDistance() / trackedDistance >= 0.5)
-        //         return;
-        //     tracked = e.getName();
-        // }
-        // if(tracked == null) tracked = e.getName();
+        if(tracked != null && !tracked.equals(e.getName())) {
+            if(e.getDistance() / trackedDistance >= 0.5)
+                return;
+            tracked = e.getName();
+        }
+        if(tracked == null) tracked = e.getName();
 
 
         double absoluteBearing = (getUniqueFrontHeadingRadians() + e.getBearingRadians()) % (Math.PI*2);
@@ -281,15 +261,15 @@ public class Pipoca extends TwoFrontsRobot {
                 Rules.getBulletSpeed(2.0),
                 fire,
                 e.getDistance()
-                );
-                if (getEnergy() > fire) setFire(fire);
+        );
+        if (getEnergy() > fire) setFire(fire);
 
     }
 
     private void pointGun(double bearingRadians, double headingRadians, double velocity, double bulletSpeed,double bulletPower, double distance) {
         // double bulletPower = Math.min(3.0,getEnergy());
 
-    		// Circular mean
+        // Circular mean
         int i;
         double turnRate;
         velocityList.remove(0);
@@ -303,7 +283,7 @@ public class Pipoca extends TwoFrontsRobot {
         for (turnRate = 0, i = 0; i < turnRateList.size(); i++) {
             turnRate += turnRateList.get(i)/turnRateList.size();
         }
-    		// /Circular mean
+        // /Circular mean
 
         double myX = getX();
         double myY = getY();
@@ -319,30 +299,30 @@ public class Pipoca extends TwoFrontsRobot {
 
         double deltaTime = 0;
         double battleFieldHeight = getBattleFieldHeight(),
-               battleFieldWidth = getBattleFieldWidth();
+                battleFieldWidth = getBattleFieldWidth();
         double predictedX = enemyX, predictedY = enemyY;
         while((++deltaTime) * (20.0 - 3.0 * bulletPower) <
-              Point2D.Double.distance(myX, myY, predictedX, predictedY)){
+                Point2D.Double.distance(myX, myY, predictedX, predictedY)){
             predictedX += Math.sin(enemyHeading) * enemyVelocity;
             predictedY += Math.cos(enemyHeading) * enemyVelocity;
             enemyHeading += enemyHeadingChange;
             if(	predictedX < 18.0
-                || predictedY < 18.0
-                || predictedX > battleFieldWidth - 18.0
-                || predictedY > battleFieldHeight - 18.0){
+                    || predictedY < 18.0
+                    || predictedX > battleFieldWidth - 18.0
+                    || predictedY > battleFieldHeight - 18.0){
 
                 predictedX = Math.min(Math.max(18.0, predictedX),
-                    battleFieldWidth - 18.0);
+                        battleFieldWidth - 18.0);
                 predictedY = Math.min(Math.max(18.0, predictedY),
-                    battleFieldHeight - 18.0);
+                        battleFieldHeight - 18.0);
                 break;
             }
         }
         double theta = Utils.normalAbsoluteAngle(Math.atan2(
-            predictedX - getX(), predictedY - getY()));
+                predictedX - getX(), predictedY - getY()));
         // if(clockwise)
         setTurnGunRightRadians(Utils.normalRelativeAngle(
-            theta - getGunHeadingRadians()));
+                theta - getGunHeadingRadians()));
         // else setTurnGunRightRadians(Utils.normalRelativeAngle(
         //     theta - getGunHeadingRadians()));
 
