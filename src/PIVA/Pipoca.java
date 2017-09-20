@@ -291,8 +291,8 @@ public class Pipoca extends TwoFrontsRobot {
         double enemyX = getX() + distance * Math.sin(absoluteBearing);
         double enemyY = getY() + distance * Math.cos(absoluteBearing);
         double enemyHeading = headingRadians;
-        // double enemyHeadingChange =  turnRate; // headingRadians - oldEnemyHeading;
-        double enemyHeadingChange =  headingRadians - oldEnemyHeading;
+        double enemyHeadingChange =  turnRate;
+//        double enemyHeadingChange =  headingRadians - oldEnemyHeading;
         double enemyVelocity = velocity;
         oldEnemyHeading = enemyHeading;
 
