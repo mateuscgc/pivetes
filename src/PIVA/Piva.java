@@ -189,6 +189,14 @@ public class Piva extends TwoFrontsRobot {
     }
 
     @Override
+    public void onRobotDeath(RobotDeathEvent event) {
+        if(getOthers() == 1){
+//            enemyBotArrayList.get(getEnemy(enemy.getName())).accuracyList;
+            enemyBotArrayList.get(getEnemy(enemy.getName())).setX1Fire();
+        }
+    }
+
+    @Override
 	public void onBulletMissed(BulletMissedEvent e) {
 		// accuracy = Math.max(accuracy - 0.05, 0);
         out.println("Errou");
@@ -265,16 +273,16 @@ public class Piva extends TwoFrontsRobot {
         double fire =
             Math.min(
             //( 400 / enemy.getDistance())*enemy.accuracy*5 + 0.4
-            400 / enemy.getDistance(),3)
+                    (fWidth/2) / enemy.getDistance(),3)
             ;
         if (getEnergy() <= 15) {
             fire /= 2;
-
         }
         if(enemy.getAccuracy() == 0.0 ) {
             fire = 0.1;
         }
-        if(fire > getEnergy())
+
+        if(fire >= getEnergy() || getOthers() == 1)
             return;
 
         pointGun(

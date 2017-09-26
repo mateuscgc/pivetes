@@ -85,6 +85,7 @@ public class EnemyBot {
         name = null;
     }
 
+
     public Boolean none(){
         if (name == null || name == "")
             return true;
@@ -121,6 +122,10 @@ public class EnemyBot {
             accuracy += value ? 0.2 : 0.0;
         }
 
+    }
+
+    public void setX1Fire(){
+        accuracyList.subList(0, accuracyList.size()/2).clear();
     }
 
 }
