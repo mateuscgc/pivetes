@@ -119,7 +119,7 @@ public class EnemyBot {
         int i;
 
         for (accuracy = 0, i = 0; i < accuracyList.size(); i++) {
-            accuracy += value ? 0.2 : 0.0;
+            accuracy += accuracyList.get(i) ? 0.2 : 0.0;
         }
 
     }

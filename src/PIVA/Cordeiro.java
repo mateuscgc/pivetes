@@ -30,16 +30,18 @@ public class Cordeiro extends TwoFrontsRobot {
     protected double dX;
     protected double dY;
 
-    double oldEnemyHeading;
     ArrayList <EnemyBot> enemyBotArrayList;
     EnemyBot enemy;
 
     //    double distancing = 0;
     double reverseChance = 0.03;
 
-    int num_shots = 0;
-    int prevented = 0;
+    ArrayList<BulletWave> waves = new ArrayList<BulletWave>();
 
+    static double[] guesses = new double[31];
+
+    int clockDirection = 1;
+    int best = 0;
 
     public void run() {
         // Set colors
@@ -61,7 +63,6 @@ public class Cordeiro extends TwoFrontsRobot {
         while(true) {
             out.println("ALERT!!!");
             setTurnRadarRightRadians(Double.POSITIVE_INFINITY);
-1
             execute();
         }
     }
@@ -78,26 +79,21 @@ public class Cordeiro extends TwoFrontsRobot {
         if (enemyIndex == -1){
             EnemyBot aux = new EnemyBot();
             aux.update(e);
-            out.println("Found :" + aux.getName());
+            //out.println("Found :" + aux.getName());
             enemyBotArrayList.add(aux);
         }
         
         else {
+            enemyBotArrayList.get(getEnemy(e.getName())).update(e);
+            enemy = enemyBotArrayList.get(getEnemy(e.getName()));
 //            out.println("Scanning " + getEnemy(e.getName()) + " :" + e.getName());
         }
     }
 
     public void onScannedRobot(ScannedRobotEvent e) {
+        out.println("TIMEEEE: "+getTime());
 
         storeScanned(e);
-
-        if(tracked != null && !tracked.equals(e.getName())) {
-            if(e.getDistance() / trackedDistance >= 0.5)
-                return;
-            tracked = e.getName();
-        }
-        if(tracked == null) tracked = e.getName();
-
 
         double absoluteBearing = (getUniqueFrontHeadingRadians() + e.getBearingRadians()) % (Math.PI*2);
 
@@ -109,16 +105,14 @@ public class Cordeiro extends TwoFrontsRobot {
             clockwise = !clockwise;
             reverseChance = Math.max(reverseChance-0.01, 0.01);
         } else{
-            reverseChance = Math.min(reverseChance+0.002, 0.05);
+            reverseChance = Math.min(reverseChance+0.001, 0.04);
         }
 
-        if(getOthers() == 1) {
-            double perpendicularHeading = absoluteBearing;
+        double perpendicularHeading = absoluteBearing;
 
-            if(clockwise) perpendicularHeading -= Math.PI/2 - Math.random()*Math.PI/4 + Math.random()*Math.PI/8;
-            if(!clockwise) perpendicularHeading += Math.PI/2 - Math.random()*Math.PI/4 + Math.random()*Math.PI/8;
-            setBetterTurnTargetRadians(perpendicularHeading, true); // (optimized with two fronts)
-        }
+        if(clockwise) perpendicularHeading -= Math.PI/2 - Math.random()*Math.PI/4 + Math.random()*Math.PI/8;
+        if(!clockwise) perpendicularHeading += Math.PI/2 - Math.random()*Math.PI/4 + Math.random()*Math.PI/8;
+        setBetterTurnTargetRadians(perpendicularHeading, true); // (optimized with two fronts)
 
 
         setAhead(Double.POSITIVE_INFINITY);
@@ -132,7 +126,7 @@ public class Cordeiro extends TwoFrontsRobot {
         double finalX = lastStatus.getX() + dX;
         smoothedTarget = movimentDirection;
         if(finalX >= fWidth-fat) {
-            out.println("Closing up to RIGHT wall");
+            //out.println("Closing up to RIGHT wall");
             vecX = fWidth-fat-getX();
             vecY = stick*Math.cos(Math.asin(vecX/stick));
             if(clockwise)
@@ -141,7 +135,7 @@ public class Cordeiro extends TwoFrontsRobot {
             double cross = vecX*dY - vecY*dX;
             smoothedTarget += Math.atan2(cross, dot);
         } else if(finalX <= fat) {
-            out.println("Closing up to LEFT wall");
+            //out.println("Closing up to LEFT wall");
             vecX = fat-getX();
             vecY = stick*Math.cos(Math.asin(vecX/stick));
             if(!clockwise)
@@ -156,7 +150,7 @@ public class Cordeiro extends TwoFrontsRobot {
         double finalY = lastStatus.getY() + dY;
 
         if(finalY >= fHeight-fat) {
-            out.println("Closing up to UPPER wall");
+            //out.println("Closing up to UPPER wall");
             vecY = fHeight-fat-getY();
             vecX = stick*Math.sin(Math.acos(vecY/stick));
             if(!clockwise)
@@ -165,7 +159,7 @@ public class Cordeiro extends TwoFrontsRobot {
             double cross = vecX*dY - vecY*dX;
             smoothedTarget += Math.atan2(cross, dot);
         } else if(finalY <= fat) {
-            out.println("Closing up to BOTTOM wall");
+            //out.println("Closing up to BOTTOM wall");
             vecY = fat-getY();
             vecX = stick*Math.sin(Math.acos(vecY/stick));
             if(clockwise)
@@ -182,36 +176,78 @@ public class Cordeiro extends TwoFrontsRobot {
 
         trackedDistance = e.getDistance();
 
-        shoot(e);
+
+        // Guess Factor
+        double enemyX = getX() + Math.sin(absoluteBearing)*e.getDistance();
+        double enemyY = getY() + Math.cos(absoluteBearing)*e.getDistance();
+
+        //out.println(waves.size());
+        for(int i = 0; i < waves.size(); i++) {
+            BulletWave wave = waves.get(i);
+            if(wave.checkHit(getTime(), enemyX, enemyY)) {
+                //out.println("WAVE HIT");
+                waves.remove(wave);
+                i--;
+            }
+        }
+
+        if(e.getVelocity() != 0) {
+            clockDirection = (Math.sin(e.getHeadingRadians()-absoluteBearing)*e.getVelocity() < 0 ? -1 : 1);
+        }
+        //out.println(clockDirection);
+
+        double bulletPower = calculateBulletPower(e.getDistance());
+
+        BulletWave newWave = new BulletWave(getTime(), getX(), getY(), bulletPower, absoluteBearing, clockDirection, guesses);
+
+        // Shoot
+        int best = (guesses.length - 1) / 2;
+        for(int i = 0; i < guesses.length; i++)
+            if(guesses[i] > guesses[best])
+                best = i;
+        //best = (int)(best);
+        if(getRoundNum() > 3){
+            best += (int)(Math.random()*6)-3;
+        }
+
+        double guessFactor = (double)(best-(guesses.length-1)/2) / ((guesses.length-1)/2);
+        double predictedOffSet = newWave.maxEscapeAngle() * guessFactor * clockDirection;
+        double gunRightTurn = Utils.normalRelativeAngle(absoluteBearing - getGunHeadingRadians() + predictedOffSet);
+        setTurnGunRightRadians(gunRightTurn);
+
+        if(getGunHeat() == 0 && gunRightTurn < Math.atan2(9, e.getDistance())) {
+            out.println(best);
+            for(int i = 0; i < guesses.length; i++) {
+                out.printf("%.1f ", guesses[i]);
+            }
+            out.println();
+            setFire(bulletPower);
+            waves.add(newWave);
+//            best++;
+//            best %= guesses.length;
+        }
 
         execute();
     }
 
-    @Override
-    public void onRobotDeath(RobotDeathEvent e) {
-        if(e.getName() == tracked) {
-            tracked = null;
-            setTurnRadarRightRadians(Double.POSITIVE_INFINITY);
-        }
-        if(getOthers() == 1){
-//            enemyBotArrayList.get(getEnemy(enemy.getName())).accuracyList;
-//            enemyBotArrayList.get(getEnemy(enemy.getName())).setX1Fire();
-        }
-    }
+//    @Override
+//    public void onSkippedTurn(SkippedTurnEvent event) {
+//        out.println("Deu merda");
+//    }
 
     @Override
 	public void onBulletMissed(BulletMissedEvent e) {
 		// accuracy = Math.max(accuracy - 0.05, 0);
 //        out.println("Errou");
         enemyBotArrayList.get(getEnemy(enemy.getName())).updateAccuracy(false);
-        out.println("Accuracy: " + enemyBotArrayList.get(getEnemy(enemy.getName())).getAccuracy());
+        //out.println("Accuracy: " + enemyBotArrayList.get(getEnemy(enemy.getName())).getAccuracy());
 	}
 	@Override
 	public void onBulletHit(BulletHitEvent e) {
 //        out.println("Acertou");
 
         enemyBotArrayList.get(getEnemy(enemy.getName())).updateAccuracy(true);
-        out.println("Accuracy: " + enemyBotArrayList.get(getEnemy(enemy.getName())).getAccuracy());
+        //out.println("Accuracy: " + enemyBotArrayList.get(getEnemy(enemy.getName())).getAccuracy());
 
 	}
 
@@ -219,7 +255,7 @@ public class Cordeiro extends TwoFrontsRobot {
     public void onBulletHitBullet(BulletHitBulletEvent event) {
 //        out.println("BulletOnBullet");
         enemyBotArrayList.get(getEnemy(enemy.getName())).updateAccuracy(false);
-        out.println("Accuracy: " + enemyBotArrayList.get(getEnemy(enemy.getName())).getAccuracy());
+        //out.println("Accuracy: " + enemyBotArrayList.get(getEnemy(enemy.getName())).getAccuracy());
     }
 
 
@@ -244,6 +280,25 @@ public class Cordeiro extends TwoFrontsRobot {
         return -1;
     }
 
+    public double calculateBulletPower(double enemyDistance) {
+        if(getTime() < 200) return 0.1;
+        if(true) {
+            return Math.min(Math.min(400/enemyDistance, 3), getEnergy()-0.1);
+        }
+        double fire =
+                Math.min(
+                        //( 400 / enemy.getDistance())*enemy.accuracy*5 + 0.4
+                        (fWidth/2) / enemyDistance,3)
+                ;
+        if (getEnergy() <= 15) {
+            fire /= 2;
+        }
+        if(enemy.getAccuracy() == 0.0 || fire >= getEnergy()) {
+            fire = Math.min(0.1, getEnergy()-0.1);
+        }
+        return fire;
+    }
+
     public void shoot(ScannedRobotEvent e) {
 
         // double fire = Math.min((400 / e.getDistance()), 3);
@@ -254,20 +309,7 @@ public class Cordeiro extends TwoFrontsRobot {
         enemyBotArrayList.get(getEnemy(e.getName())).update(e);
         enemy = enemyBotArrayList.get(getEnemy(e.getName()));
 
-        double fire =
-                Math.min(
-                        //( 400 / enemy.getDistance())*enemy.accuracy*5 + 0.4
-                        (fWidth/2) / enemy.getDistance(),3)
-                ;
-        if (getEnergy() <= 15) {
-            fire /= 2;
-        }
-        if(enemy.getAccuracy() == 0.0 ) {
-            fire = 0.1;
-        }
-
-        if(fire >= getEnergy())
-            return;
+        double fire = calculateBulletPower(e.getDistance());
 
         pointGun(
                 enemy.getBearing(),
