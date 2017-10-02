@@ -6,10 +6,9 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 
 import java.awt.geom.*;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
-public class ThePiva extends TwoFrontsRobot {
+public class Pipoca extends TwoFrontsRobot {
 
     protected String tracked;
     protected double trackedDistance;
@@ -37,11 +36,17 @@ public class ThePiva extends TwoFrontsRobot {
     ArrayList<Double> turnRateList;
     int nMean;
 
-    double distancing = 0;
+    //    double distancing = 0;
+    double reverseChance = 0.03;
 
 
     public void run() {
         // Set colors
+        setBodyColor(new Color(188, 75, 200));
+        setRadarColor(new Color(31, 212, 132));
+        setGunColor(new Color(0, 0, 0));
+        setBulletColor(new Color(255, 255, 255));
+        setScanColor(new Color(201, 91, 214));
 
         nMean = 5;
         velocityList = new ArrayList<Double>();
@@ -55,19 +60,27 @@ public class ThePiva extends TwoFrontsRobot {
         fWidth = getBattleFieldWidth();
 
         setAdjustGunForRobotTurn(true);
-        setAdjustRadarForRobotTurn(true);
-       setAdjustRadarForGunTurn(true);
+        setAdjustRadarForGunTurn(true);
         tracked = null;
+
+//        double[] WD = { fHeight-getY(), fWidth-getX(), getY(), getX() };
+//        double[] WH = { 0, Math.PI/2, Math.PI, 3*Math.PI/2 };
+//        int bestw = 0;
+//        for(int i = 0; i < WD.length; i++) {
+//            if(WD[i] < WD[bestw]) bestw = i;
+//        }
+//        setBetterTurnTargetRadians(WH[bestw], true);
+//        setAhead(Double.POSITIVE_INFINITY);
 
         while(true) {
             out.println("ALERT!!!");
-            // setAdjustRadarForGunTurn(false);
-            // setTurnGunRightRadians(Double.POSITIVE_INFINITY);
             setTurnRadarRightRadians(Double.POSITIVE_INFINITY);
 
             execute();
         }
     }
+
+
 
     public void storeScanned(ScannedRobotEvent e) {
         double absoluteBearing = getUniqueFrontHeadingRadians() + e.getBearingRadians();
@@ -76,6 +89,7 @@ public class ThePiva extends TwoFrontsRobot {
     }
 
     public void onScannedRobot(ScannedRobotEvent e) {
+        out.println("Chance "+reverseChance);
 
         storeScanned(e);
 
@@ -86,7 +100,6 @@ public class ThePiva extends TwoFrontsRobot {
         }
         if(tracked == null) tracked = e.getName();
 
-        // setAdjustRadarForGunTurn(true);
 
         double absoluteBearing = (getUniqueFrontHeadingRadians() + e.getBearingRadians()) % (Math.PI*2);
 
@@ -96,15 +109,24 @@ public class ThePiva extends TwoFrontsRobot {
 
         // Musashi trick (circle the opponent) (1v1)
         // Chance to change direction of circle movement
-        if(Math.random() > 0.97) clockwise = !clockwise;
-        // Turn robot to be perpendicular to opponent
-        double perpendicularHeading = absoluteBearing;
-        out.println("Distancing: "+distancing);
-        if(clockwise) perpendicularHeading -= Math.PI/2;
-        if(!clockwise) perpendicularHeading += Math.PI/2;
-        setBetterTurnTargetRadians(perpendicularHeading, true); // (optimized with two fronts)
+        if(Math.random() < reverseChance) {
+            clockwise = !clockwise;
+            reverseChance = Math.max(reverseChance-0.01, 0.01);
+        } else{
+            reverseChance = Math.min(reverseChance+0.002, 0.05);
+        }
+
+        if(getOthers() == 1) {
+            // Turn robot to be perpendicular to opponent
+            double perpendicularHeading = absoluteBearing;
+            if(clockwise) perpendicularHeading -= Math.PI/2;
+            if(!clockwise) perpendicularHeading += Math.PI/2;
+            setBetterTurnTargetRadians(perpendicularHeading, true); // (optimized with two fronts)
+        }
+
+
         setAhead(Double.POSITIVE_INFINITY);
-        distancing = Math.max(distancing-Math.PI/540, -Math.PI/12); // Tend to get closer to opponent (check out onHitByBullet)
+//        distancing = Math.max(distancing-Math.PI/540, -Math.PI/12); // Tend to get closer to opponent (check out onHitByBullet)
 
 
         // Wall Smoothing
@@ -112,7 +134,6 @@ public class ThePiva extends TwoFrontsRobot {
         movimentDirection += getTurnRemainingRadians();
         dX = stick*Math.sin(movimentDirection);
         dY = stick*Math.cos(movimentDirection);
-        out.println(perpendicularHeading + "   " + movimentDirection);
         double finalX = lastStatus.getX() + dX;
         smoothedTarget = movimentDirection;
         if(finalX >= fWidth-fat) {
@@ -172,18 +193,27 @@ public class ThePiva extends TwoFrontsRobot {
     }
 
     public void onHitByBullet(HitByBulletEvent e) {
-        distancing = Math.min(distancing+Math.PI/30*e.getPower(), Math.PI/6); // If hit, tend to get far from opponent
+//        distancing = Math.min(distancing+Math.PI/30*e.getPower(), Math.PI/6); // If hit, tend to get far from opponent
         clockwise = !clockwise;
+        reverseChance = Math.max(reverseChance-0.02, 0.01);
     }
     public void onHitRobot(HitRobotEvent e) {
         clockwise = !clockwise;
+        reverseChance = Math.max(reverseChance-0.03, 0.01);
     }
     public void onHitWall(HitWallEvent e) {
         clockwise = !clockwise;
+        reverseChance = Math.max(reverseChance-0.03, 0.01);
+    }
+    public void onRobotDeath(RobotDeathEvent e) {
+        if(e.getName() == tracked) {
+            tracked = null;
+            setTurnRadarRightRadians(Double.POSITIVE_INFINITY);
+        }
     }
 
 
-    /*public void onPaint(Graphics2D g) {
+    public void onPaint(Graphics2D g) {
         // Set the paint color to a red half transparent color
         g.setColor(new Color(0xff, 0x00, 0x00, 0x80));
         // Draw a line from our robot to the scanned robot
@@ -218,7 +248,7 @@ public class ThePiva extends TwoFrontsRobot {
         g.drawLine((int)getX(), (int)getY(), (int)(getX()+vecX), (int)(getY()+vecY));
         g.setColor(new Color(255, 49, 163));
         g.drawLine((int)getX(), (int)getY(), (int)(getX()+dX), (int)(getY()+dY));
-    }*/
+    }
     public void atira(ScannedRobotEvent e) {
 
         double fire = Math.min(400 / e.getDistance(), 3);
@@ -231,15 +261,15 @@ public class ThePiva extends TwoFrontsRobot {
                 Rules.getBulletSpeed(2.0),
                 fire,
                 e.getDistance()
-                );
-                if (getEnergy() > fire) setFire(fire);
+        );
+        if (getEnergy() > fire) setFire(fire);
 
     }
 
     private void pointGun(double bearingRadians, double headingRadians, double velocity, double bulletSpeed,double bulletPower, double distance) {
         // double bulletPower = Math.min(3.0,getEnergy());
 
-    		// Circular mean
+        // Circular mean
         int i;
         double turnRate;
         velocityList.remove(0);
@@ -253,48 +283,46 @@ public class ThePiva extends TwoFrontsRobot {
         for (turnRate = 0, i = 0; i < turnRateList.size(); i++) {
             turnRate += turnRateList.get(i)/turnRateList.size();
         }
-    		// /Circular mean
+        // /Circular mean
 
         double myX = getX();
         double myY = getY();
-        // double absoluteBearing = getHeadingRadians() + bearingRadians;
-        // double absoluteBearing = getHeadingRadians() + bearingRadians;
         double absoluteBearing = getUniqueFrontHeadingRadians() + bearingRadians;
         double enemyX = getX() + distance * Math.sin(absoluteBearing);
         double enemyY = getY() + distance * Math.cos(absoluteBearing);
         double enemyHeading = headingRadians;
-        // double enemyHeadingChange =  turnRate; // headingRadians - oldEnemyHeading;
-        double enemyHeadingChange =  headingRadians - oldEnemyHeading;
+        double enemyHeadingChange =  turnRate;
+//        double enemyHeadingChange =  headingRadians - oldEnemyHeading;
         double enemyVelocity = velocity;
         oldEnemyHeading = enemyHeading;
 
 
         double deltaTime = 0;
         double battleFieldHeight = getBattleFieldHeight(),
-               battleFieldWidth = getBattleFieldWidth();
+                battleFieldWidth = getBattleFieldWidth();
         double predictedX = enemyX, predictedY = enemyY;
         while((++deltaTime) * (20.0 - 3.0 * bulletPower) <
-              Point2D.Double.distance(myX, myY, predictedX, predictedY)){
+                Point2D.Double.distance(myX, myY, predictedX, predictedY)){
             predictedX += Math.sin(enemyHeading) * enemyVelocity;
             predictedY += Math.cos(enemyHeading) * enemyVelocity;
             enemyHeading += enemyHeadingChange;
             if(	predictedX < 18.0
-                || predictedY < 18.0
-                || predictedX > battleFieldWidth - 18.0
-                || predictedY > battleFieldHeight - 18.0){
+                    || predictedY < 18.0
+                    || predictedX > battleFieldWidth - 18.0
+                    || predictedY > battleFieldHeight - 18.0){
 
                 predictedX = Math.min(Math.max(18.0, predictedX),
-                    battleFieldWidth - 18.0);
+                        battleFieldWidth - 18.0);
                 predictedY = Math.min(Math.max(18.0, predictedY),
-                    battleFieldHeight - 18.0);
+                        battleFieldHeight - 18.0);
                 break;
             }
         }
         double theta = Utils.normalAbsoluteAngle(Math.atan2(
-            predictedX - getX(), predictedY - getY()));
+                predictedX - getX(), predictedY - getY()));
         // if(clockwise)
         setTurnGunRightRadians(Utils.normalRelativeAngle(
-            theta - getGunHeadingRadians()));
+                theta - getGunHeadingRadians()));
         // else setTurnGunRightRadians(Utils.normalRelativeAngle(
         //     theta - getGunHeadingRadians()));
 
