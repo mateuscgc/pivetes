@@ -22,8 +22,14 @@ public class EnemyBot {
     ArrayList<Double> velocityList;
     ArrayList<Double> turnRateList;
 
+    ArrayList<BulletWave> waves = new ArrayList<BulletWave>();
+    double[] guesses = new double[31];
+
     double accuracy;
     ArrayList<Boolean> accuracyList;
+
+    boolean scanned;
+    boolean alive;
 
     public double getBearing(){
         return bearing;
@@ -77,7 +83,7 @@ public class EnemyBot {
     }
     public void reset(){
         bearing = 0.0;
-        distance = 0.0;
+        distance = Double.POSITIVE_INFINITY;
         energy= 0.0;
         heading =0.0;
         velocity = 0.0;
@@ -94,6 +100,8 @@ public class EnemyBot {
     }
 
     public EnemyBot(){
+        scanned = false;
+        alive = true;
         nMean = 5;
         nAccuracy = 10;
         velocityList = new ArrayList<Double>();
@@ -107,6 +115,11 @@ public class EnemyBot {
             accuracyList.add(false);
         }
         reset();
+    }
+
+    public void rise() {
+        alive = true;
+        scanned = false;
     }
 
     public double getAccuracy(){

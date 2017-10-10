@@ -3,7 +3,7 @@ import robocode.*;
 
 import static robocode.util.Utils.normalRelativeAngle;
 
-public class TwoFrontsRobot extends AdvancedRobot {
+public abstract class TwoFrontsRobot extends AdvancedRobot {
     protected RobotStatus lastStatus;
     protected int basf = 0;
     protected boolean changeFront = false;
