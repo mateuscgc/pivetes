@@ -8,6 +8,7 @@ public class EnemyBot {
     double energy;
     double heading;
     double velocity;
+    double absoluteBearing;
     String name;
 
     double turnRate;
@@ -57,9 +58,10 @@ public class EnemyBot {
     }
 
 
-    public void update(ScannedRobotEvent bot){
+    public void update(ScannedRobotEvent bot,double absoluteBearing){
         int i;
 
+        this.absoluteBearing = absoluteBearing;
         bearing = bot.getBearingRadians();
         distance = bot.getDistance();
         energy = bot.getEnergy();
@@ -102,14 +104,14 @@ public class EnemyBot {
     public EnemyBot(){
         scanned = false;
         alive = true;
-        nMean = 5;
+        nMean = 1;
         nAccuracy = 10;
         velocityList = new ArrayList<Double>();
         turnRateList = new ArrayList<Double>();
         accuracyList = new ArrayList<Boolean>();
         for (int i = 0; i < nMean; i++) {
-            velocityList.add(5.0);
-            turnRateList.add(5.0);
+            velocityList.add(1.0);
+            turnRateList.add(1.0);
         }
         for (int i = 0; i < nAccuracy; i++) {
             accuracyList.add(false);
