@@ -6,6 +6,7 @@ public class EnemyBot {
     double bearing;
     double distance;
     double energy;
+    double lastEnergy;
     double heading;
     double velocity;
     double absoluteBearing;
@@ -24,7 +25,10 @@ public class EnemyBot {
     ArrayList<Double> turnRateList;
 
     ArrayList<BulletWave> waves = new ArrayList<BulletWave>();
+    ArrayList<BulletWave> surfWaves = new ArrayList<BulletWave>();
     double[] guesses = new double[31];
+    double[] surfGuesses = new double[31];
+
 
     double accuracy;
     ArrayList<Boolean> accuracyList;
@@ -57,6 +61,20 @@ public class EnemyBot {
         return turnRate;
     }
 
+    public int updateSurfWaves(double hitX, double hitY, long currentTime) {
+        int ans = 0;
+        for(int i = 0; i < surfWaves.size(); i++) {
+            BulletWave wave = surfWaves.get(i);
+            if(wave.possibleBullet(hitX, hitY, currentTime)) {
+                //if(wave.checkHit(getTime(), enemyX, enemyY)) {
+                ans++;
+                surfWaves.remove(wave);
+                i--;
+            }
+        }
+        return ans;
+    }
+
 
     public void update(ScannedRobotEvent bot,double absoluteBearing){
         int i;
@@ -64,6 +82,7 @@ public class EnemyBot {
         this.absoluteBearing = absoluteBearing;
         bearing = bot.getBearingRadians();
         distance = bot.getDistance();
+        lastEnergy = energy;
         energy = bot.getEnergy();
 
         oldEnemyHeading = heading; // the current heading becomes previously
@@ -86,11 +105,20 @@ public class EnemyBot {
     public void reset(){
         bearing = 0.0;
         distance = Double.POSITIVE_INFINITY;
-        energy= 0.0;
+        energy= 100.0;
+        lastEnergy = 100.0;
         heading =0.0;
         velocity = 0.0;
 
         name = null;
+    }
+
+    public double bulletPower() {
+        return lastEnergy - energy;
+    }
+
+    public boolean ehTiroZe() {
+        return 0.1 <= bulletPower() && bulletPower() <= 3.0;
     }
 
 

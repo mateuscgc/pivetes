@@ -8,18 +8,18 @@ public class BulletWave {
     private double fireX, fireY;
     private double bulletPower;
 
-    private double fireEnemyAbsoluteBearing;
+    private double fireAbsoluteBearing;
     private int clockDirection;
 
     //private int[] guesses;
     private double[] guesses;
 
-    public BulletWave(long fireTime, double fireX, double fireY, double bulletPower, double fireEnemyAbsoluteBearing, int clockDirection, double[] guesses) {
+    public BulletWave(long fireTime, double fireX, double fireY, double bulletPower, double fireAbsoluteBearing, int clockDirection, double[] guesses) {
         this.fireTime = fireTime;
         this.fireX = fireX;
         this.fireY = fireY;
         this.bulletPower = bulletPower;
-        this.fireEnemyAbsoluteBearing = fireEnemyAbsoluteBearing;
+        this.fireAbsoluteBearing = fireAbsoluteBearing;
         this.clockDirection = clockDirection;
         this.guesses = guesses;
     }
@@ -37,14 +37,31 @@ public class BulletWave {
                 < Point2D.distance(fireX, fireY, enemyX, enemyY))
             return false;
 
-        double correctDirection = Math.atan2(enemyX - fireX, enemyY - fireY);
-        double movementOffSet = Utils.normalRelativeAngle((correctDirection - fireEnemyAbsoluteBearing));
+        logWave(enemyX, enemyY);
+
+        return true;
+    }
+
+    public double curRay(long currentTime) {
+        return getBulletVelocity()*(currentTime-fireTime);
+    }
+
+    public boolean possibleBullet(double hitX, double hitY, long currentTime) {
+        if(Math.abs(curRay(currentTime) - Point2D.distance(fireX, fireY, hitX, hitY)) > 30) return false;
+
+        logWave(hitX, hitY);
+
+        return true;
+    }
+
+    private void logWave(double hitX, double hitY) {
+        double correctDirection = Math.atan2(hitX - fireX, hitY - fireY);
+        double movementOffSet = Utils.normalRelativeAngle((correctDirection - fireAbsoluteBearing));
         double guessFactor = Math.max(-1, Math.min(1, movementOffSet / maxEscapeAngle())) * clockDirection;
         int index = (int)Math.round((guesses.length - 1) / 2 * (guessFactor + 1));
         for(int i = 0; i < guesses.length; i++)
             guesses[i] *= 0.7;
         guesses[index]++;
-
-        return true;
     }
+
 }

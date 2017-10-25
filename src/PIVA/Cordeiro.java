@@ -322,7 +322,18 @@ public class Cordeiro extends TwoFrontsRobot {
         }
 
         scannedEnemy.waves.add(newWave);
-//        execute();
+
+        // Wave Surfing
+        if(target == scannedEnemy) {
+            if(target.ehTiroZe()) {
+                out.println("NEWWWWW SURFWAVEEEEEEE");
+                BulletWave surfWave = new BulletWave(getTime(), enemyX, enemyY,
+                                                    target.bulletPower(),
+                                                    (absoluteBearing+Math.PI) % (2*Math.PI),
+                                                    clockwise ? 1 : -1, target.surfGuesses);
+                target.surfWaves.add(surfWave);
+            }
+        }
     }
 
     @Override
@@ -338,15 +349,28 @@ public class Cordeiro extends TwoFrontsRobot {
 	}
 
     @Override
-    public void onBulletHitBullet(BulletHitBulletEvent event) {
+    public void onBulletHitBullet(BulletHitBulletEvent e) {
         enemyBotArrayList.get(getEnemy(scannedEnemy.getName())).updateAccuracy(false);
         //out.println("Accuracy: " + enemyBotArrayList.get(getEnemy(scannedEnemy.getName())).getAccuracy());
+
+        EnemyBot meliante = enemyBotArrayList.get(getEnemy(e.getHitBullet().getName()));
+        if (meliante != null) {
+            int possibleBullets = meliante.updateSurfWaves(e.getHitBullet().getX(), e.getHitBullet().getY(), getTime());
+            out.println("BULLET HIT BULLET, NUMBER OF SUSPECTS: " + possibleBullets);
+        }
     }
 
 
     public void onHitByBullet(HitByBulletEvent e) {
         changeReverseChance(5);
+
+        EnemyBot meliante = enemyBotArrayList.get(getEnemy(e.getName()));
+        if (meliante != null) {
+            int possibleBullets = meliante.updateSurfWaves(getX(), getY(), getTime());
+            out.println("HIT BY BULLET, NUMBER OF SUSPECTS: " + possibleBullets);
+        }
     }
+
     public void onHitRobot(HitRobotEvent e) {
         changeDirection();
         setMinReverseChance();
