@@ -17,17 +17,13 @@ public class EnemyBot {
 //    double turnRate;
 
 
+
     int nMean;
     int nAccuracy;
 
     double oldEnemyHeading;
     ArrayList<Double> velocityList;
     ArrayList<Double> turnRateList;
-
-    ArrayList<BulletWave> waves = new ArrayList<BulletWave>();
-    ArrayList<BulletWave> surfWaves = new ArrayList<BulletWave>();
-    double[] guesses = new double[31];
-    double[] surfGuesses = new double[31];
 
 
     double accuracy;
@@ -61,19 +57,7 @@ public class EnemyBot {
         return turnRate;
     }
 
-    public int updateSurfWaves(double hitX, double hitY, long currentTime) {
-        int ans = 0;
-        for(int i = 0; i < surfWaves.size(); i++) {
-            BulletWave wave = surfWaves.get(i);
-            if(wave.possibleBullet(hitX, hitY, currentTime)) {
-                //if(wave.checkHit(getTime(), enemyX, enemyY)) {
-                ans++;
-                surfWaves.remove(wave);
-                i--;
-            }
-        }
-        return ans;
-    }
+
 
 
     public void update(ScannedRobotEvent bot,double absoluteBearing){
@@ -118,7 +102,7 @@ public class EnemyBot {
     }
 
     public boolean ehTiroZe() {
-        return 0.1 <= bulletPower() && bulletPower() <= 3.0;
+        return 0.09 < bulletPower() && bulletPower() < 3.1;
     }
 
 
